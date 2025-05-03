@@ -1,9 +1,9 @@
-const formidable = require('formidable')
+const { IncomingForm } = require('formidable')
 const fs = require('fs')
 const { analisarDocumentoComGoogleVision } = require('../vision')
 
 module.exports = async (req, res) => {
-  const form = formidable({ multiples: false })
+  const form = new IncomingForm()
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
@@ -41,6 +41,6 @@ module.exports = async (req, res) => {
 
 export const config = {
   api: {
-    bodyParser: false,
-  },
+    bodyParser: false
+  }
 }
