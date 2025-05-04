@@ -8,9 +8,11 @@ const supabase = createClient(
 )
 
 module.exports = async (req, res) => {
-  const { code } = req.query
+  const { code, state } = req.query
 
-  if (!code) return res.status(400).send('Código não informado.')
+  if (!code || !state) return res.status(400).send('Código ou usuário não informado.')
+
+  const userId = state
 
   try {
     const { data: tokenData } = await axios.post(
@@ -26,9 +28,9 @@ module.exports = async (req, res) => {
     )
 
     const accessToken = tokenData.access_token
-    const userId = tokenData.user_id
+    const instaUserId = tokenData.user_id
 
-    const { data: perfil } = await axios.get(`https://graph.instagram.com/${userId}`, {
+    const { data: perfil } = await axios.get(`https://graph.instagram.com/${instaUserId}`, {
       params: {
         fields: 'id,username,account_type,media_count',
         access_token: accessToken
@@ -42,7 +44,7 @@ module.exports = async (req, res) => {
     }
 
     try {
-      const { data: extraData } = await axios.get(`https://graph.instagram.com/${userId}`, {
+      const { data: extraData } = await axios.get(`https://graph.instagram.com/${instaUserId}`, {
         params: {
           fields: 'biography,followers_count,profile_picture_url',
           access_token: accessToken
@@ -58,14 +60,17 @@ module.exports = async (req, res) => {
       console.warn('Campos extras não disponíveis:', err.response?.data || err.message)
     }
 
-    const { error } = await supabase.from('users').upsert({
-      instagram_id: perfil.id,
-      instagram_username: perfil.username,
-      instagram_bio: extra.biography,
-      instagram_followers: extra.followers_count,
-      instagram_picture: extra.profile_picture_url,
-      instagram_token: accessToken
-    })
+    const { error } = await supabase
+      .from('users')
+      .update({
+        instagram_id: perfil.id,
+        instagram_username: perfil.username,
+        instagram_bio: extra.biography,
+        instagram_followers: extra.followers_count,
+        instagram_picture: extra.profile_picture_url,
+        instagram_token: accessToken
+      })
+      .eq('id', userId)
 
     if (error) throw error
 
