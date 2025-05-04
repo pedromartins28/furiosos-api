@@ -13,7 +13,6 @@ module.exports = async (req, res) => {
   if (!code) return res.status(400).send('Código não informado.')
 
   try {
-    // 1. Trocar code por token
     const { data: tokenData } = await axios.post(
       'https://api.instagram.com/oauth/access_token',
       qs.stringify({
@@ -29,7 +28,6 @@ module.exports = async (req, res) => {
     const accessToken = tokenData.access_token
     const userId = tokenData.user_id
 
-    // 2. Buscar dados do Instagram
     const { data: perfil } = await axios.get(`https://graph.instagram.com/${userId}`, {
       params: {
         fields: 'id,username,account_type,media_count',
@@ -37,16 +35,41 @@ module.exports = async (req, res) => {
       }
     })
 
-    // 3. Salvar no Supabase
-    await supabase.from('users').upsert({
+    let extra = {
+      biography: null,
+      followers_count: null,
+      profile_picture_url: null
+    }
+
+    try {
+      const { data: extraData } = await axios.get(`https://graph.instagram.com/${userId}`, {
+        params: {
+          fields: 'biography,followers_count,profile_picture_url',
+          access_token: accessToken
+        }
+      })
+
+      extra = {
+        biography: extraData.biography || null,
+        followers_count: extraData.followers_count || null,
+        profile_picture_url: extraData.profile_picture_url || null
+      }
+    } catch (err) {
+      console.warn('Campos extras não disponíveis:', err.response?.data || err.message)
+    }
+
+    const { error } = await supabase.from('users').upsert({
       instagram_id: perfil.id,
       instagram_username: perfil.username,
-      instagram_account_type: perfil.account_type,
-      instagram_media_count: perfil.media_count,
+      instagram_bio: extra.biography,
+      instagram_followers: extra.followers_count,
+      instagram_picture: extra.profile_picture_url,
       instagram_token: accessToken
     })
 
-    res.redirect('/?instagram=ok')
+    if (error) throw error
+
+    res.redirect('https://furiosos-web.vercel.app/?instagram=ok')
   } catch (err) {
     console.error('Erro no login com Instagram:', err.response?.data || err.message)
     res.status(500).send('Erro ao vincular conta do Instagram.')
