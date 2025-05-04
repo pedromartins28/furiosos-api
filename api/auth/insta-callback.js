@@ -60,7 +60,7 @@ module.exports = async (req, res) => {
       console.warn('Campos extras não disponíveis:', err.response?.data || err.message)
     }
 
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from('users')
       .update({
         instagram_id: perfil.id,
@@ -72,7 +72,47 @@ module.exports = async (req, res) => {
       })
       .eq('id', userId)
 
-    if (error) throw error
+    if (updateError) throw updateError
+
+    const { data: postsData } = await axios.get(`https://graph.facebook.com/v19.0/${perfil.id}/media`, {
+      params: {
+        fields: 'id,caption,media_type,media_url,timestamp,like_count,comments_count',
+        access_token: accessToken
+      }
+    })
+
+    for (const post of postsData.data) {
+      await supabase.from('instagram_posts').upsert({
+        id: post.id,
+        user_id: userId,
+        caption: post.caption || null,
+        media_type: post.media_type,
+        media_url: post.media_url,
+        timestamp: post.timestamp,
+        like_count: post.like_count || 0,
+        comments_count: post.comments_count || 0
+      })
+
+      try {
+        const { data: insightResp } = await axios.get(`https://graph.facebook.com/v19.0/${post.id}/insights`, {
+          params: {
+            metric: 'impressions,reach,engagement',
+            access_token: accessToken
+          }
+        })
+
+        for (const metric of insightResp.data) {
+          await supabase.from('instagram_insights').insert({
+            post_id: post.id,
+            metric: metric.name,
+            value: Array.isArray(metric.values) ? metric.values[0]?.value : metric.value,
+            period: metric.period
+          })
+        }
+      } catch (insightErr) {
+        console.warn(`Erro ao buscar insights do post ${post.id}:`, insightErr.response?.data || insightErr.message)
+      }
+    }
 
     res.redirect('https://furiosos-web.vercel.app/?instagram=ok')
   } catch (err) {
