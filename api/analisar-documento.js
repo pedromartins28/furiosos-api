@@ -2,17 +2,30 @@ const { IncomingForm } = require('formidable')
 const fs = require('fs')
 const { analisarDocumentoComGoogleVision } = require('../vision')
 
-module.exports = async (req, res) => {
+module.exports = (req, res) => {
+  // CORS SEMPRE no topo
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end()
+    return
+  }
+
   const form = new IncomingForm()
 
   form.parse(req, async (err, fields, files) => {
+
     if (err) {
-      return res.status(500).json({ erro: 'Erro ao processar formulário.' })
+      res.status(500).json({ erro: 'Erro ao processar formulário.' })
+      return
     }
 
     try {
-      const { nome, cpf } = fields
-      const file = files.file
+      const nome = fields.nome?.[0]
+      const cpf = fields.cpf?.[0]
+      const file = files.file?.[0]      
 
       if (!file || !file.filepath) {
         return res.status(400).json({ erro: 'Arquivo não enviado.' })
