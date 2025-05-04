@@ -37,17 +37,19 @@ SUPABASE_KEY=
 INSTAGRAM_CLIENT_ID=
 INSTAGRAM_CLIENT_SECRET=
 INSTAGRAM_REDIRECT_URI=
+OPENAI_API_KEY=
 ```
 
 **Descrição das variáveis:**
 
-- `PORT`: Chave de API do Google Vision.
+- `GOOGLE_API_KEY`: Chave de API do Google Vision.
 - `PORT`: Porta em que a API será executada (padrão: 3000).
 - `SUPABASE_URL`: URL do seu projeto no Supabase.
 - `SUPABASE_KEY`: Chave de API do Supabase.
 - `INSTAGRAM_CLIENT_ID`: ID do aplicativo do Instagram para OAuth2.
 - `INSTAGRAM_CLIENT_SECRET`: Chave secreta do aplicativo do Instagram.
 - `INSTAGRAM_REDIRECT_URI`: URL de redirecionamento configurada no Facebook Developers.
+- `OPENAI_API_KEY`: Chave da OpenAI para análise de conteúdo com IA.
 
 > ⚠️ **Importante:** Nunca versionar o arquivo `.env`. Adicione-o ao `.gitignore`.
 
@@ -87,7 +89,7 @@ INSTAGRAM_REDIRECT_URI=
    yarn dev
    ```
 
-A API estará disponível em `http://localhost:3333`.
+A API estará disponível em `http://localhost:3000`.
 
 ---
 
@@ -160,6 +162,69 @@ curl -X POST https://furiosos-api.vercel.app/analisar-documento.js \
 ```
 
 > ⚠️ Este endpoint já trata CORS e `OPTIONS`, permitindo chamadas diretas do frontend.
+
+---
+
+### 📌 `POST /validar-perfil`
+
+Este endpoint utiliza **inteligência artificial (OpenAI)** para validar se um link compartilhado pelo usuário (como um perfil em site de e-sports) tem **relação com seus interesses declarados** (como “Valorant”, “FPS”, “e-sports”).
+
+#### Requisição:
+- Método: `POST`
+- Tipo: `application/json`
+- Corpo da requisição:
+```json
+{
+  "url": "https://liquipedia.net/valorant/FURIA",
+  "interesses": ["Valorant", "FPS", "e-sports"]
+}
+```
+
+#### Resposta:
+- ✅ Caso o conteúdo do site seja relevante:
+```json
+{
+  "url": "https://liquipedia.net/valorant/FURIA",
+  "relevante": true
+}
+```
+
+- ❌ Caso não haja relação clara:
+```json
+{
+  "url": "https://liquipedia.net/valorant/FURIA",
+  "relevante": false
+}
+```
+
+- ❌ Em caso de erro:
+```json
+{
+  "erro": "Erro ao processar link."
+}
+```
+
+> ⚠️ Este endpoint já inclui suporte a CORS e `OPTIONS`.
+
+---
+
+## 🤖 Configuração da OpenAI (IA)
+
+Para utilizar o endpoint de validação de perfil com IA, você precisa de uma conta com **créditos ativos na OpenAI**.
+
+### 1. Crie uma conta em:  
+[https://platform.openai.com](https://platform.openai.com)
+
+### 2. Gere sua chave de API em:  
+[https://platform.openai.com/account/api-keys](https://platform.openai.com/account/api-keys)
+
+### 3. Configure no seu arquivo `.env`:
+
+```env
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+> ⚠️ A chave precisa ter acesso ao modelo `gpt-3.5-turbo`. Se quiser usar `gpt-4`, verifique se sua conta tem permissão e créditos suficientes.
 
 ---
 
