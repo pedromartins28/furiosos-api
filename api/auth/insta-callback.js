@@ -74,9 +74,9 @@ module.exports = async (req, res) => {
 
     if (updateError) throw updateError
 
-    const { data: postsData } = await axios.get(`https://graph.facebook.com/v19.0/${perfil.id}/media`, {
+    const { data: postsData } = await axios.get(`https://graph.instagram.com/${instaUserId}/media`, {
       params: {
-        fields: 'id,caption,media_type,media_url,timestamp,like_count,comments_count',
+        fields: 'id,caption,media_type,media_url,timestamp',
         access_token: accessToken
       }
     })
@@ -89,12 +89,12 @@ module.exports = async (req, res) => {
         media_type: post.media_type,
         media_url: post.media_url,
         timestamp: post.timestamp,
-        like_count: post.like_count || 0,
-        comments_count: post.comments_count || 0
+        like_count: null, 
+        comments_count: null 
       })
 
       try {
-        const { data: insightResp } = await axios.get(`https://graph.facebook.com/v19.0/${post.id}/insights`, {
+        const { data: insightResp } = await axios.get(`https://graph.instagram.com/${post.id}/insights`, {
           params: {
             metric: 'impressions,reach,engagement',
             access_token: accessToken
