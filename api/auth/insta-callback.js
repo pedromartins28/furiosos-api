@@ -96,7 +96,7 @@ module.exports = async (req, res) => {
       try {
         const { data: insightResp } = await axios.get(`https://graph.instagram.com/${post.id}/insights`, {
           params: {
-            metric: 'impressions,reach,engagement',
+            metric: 'impressions,reach,likes,comments,saved,engagement,shares,plays,profile_activity',
             access_token: accessToken
           }
         })
